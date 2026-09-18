@@ -1,41 +1,3 @@
-// ---- background decoration: scattered yerba leaves + brand watermarks ----
-
-const YERBA_BRANDS = ['Taragüí', 'Rosamonte', 'Playadito', 'CBSé', 'La Merced', 'Amanda', 'Nobleza Gaucha'];
-
-function scatterLeaves() {
-  const container = document.getElementById('bg-leaves');
-  const count = 22;
-  for (let i = 0; i < count; i++) {
-    const leaf = document.createElement('div');
-    leaf.className = 'leaf';
-    leaf.style.left = Math.random() * 100 + 'vw';
-    leaf.style.top = Math.random() * 100 + 'vh';
-    leaf.style.transform = `rotate(${Math.random() * 360}deg) scale(${0.7 + Math.random() * 0.8})`;
-    container.appendChild(leaf);
-
-    const stem = document.createElement('div');
-    stem.className = 'stem';
-    stem.style.left = Math.random() * 100 + 'vw';
-    stem.style.top = Math.random() * 100 + 'vh';
-    stem.style.transform = `rotate(${Math.random() * 360}deg)`;
-    container.appendChild(stem);
-  }
-}
-
-function scatterBrands() {
-  const container = document.getElementById('bg-brands');
-  const count = 14;
-  for (let i = 0; i < count; i++) {
-    const el = document.createElement('span');
-    el.textContent = YERBA_BRANDS[Math.floor(Math.random() * YERBA_BRANDS.length)];
-    el.style.left = Math.random() * 90 + 'vw';
-    el.style.top = Math.random() * 100 + 'vh';
-    el.style.fontSize = (1 + Math.random() * 1.8) + 'rem';
-    el.style.transform = `rotate(${-25 + Math.random() * 50}deg)`;
-    container.appendChild(el);
-  }
-}
-
 // ---- countdown ----
 
 function getTargetTime() {
@@ -145,9 +107,6 @@ function fireConfetti() {
 }
 
 // ---- init ----
-
-scatterLeaves();
-scatterBrands();
 
 let confettiFired = false;
 updateCountdown();
