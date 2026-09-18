@@ -224,6 +224,10 @@ body {
     inset 0 1px 0 rgba(255, 255, 255, 0.6);
   cursor: pointer;
   transition: transform 0.08s ease, box-shadow 0.15s ease, filter 0.15s ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .water-btn:hover { filter: brightness(1.05); }
