@@ -106,6 +106,65 @@ function fireConfetti() {
   requestAnimationFrame(tick);
 }
 
+// ---- agua: click to fill, let go and it drains ----
+// Everything is tracked in whole millilitres so repeated += 0.1 can't drift.
+
+const WATER_MAX_ML = 2700;
+const WATER_PER_CLICK_ML = 100;
+const WATER_DRAIN_TICK_MS = 200;
+const WATER_DRAIN_PER_TICK_ML = 20;   // 100 ml per second
+const WATER_GRACE_MS = 800;           // pause draining right after a click
+const TOAST_MS = 2200;
+
+let waterMl = 0;
+let lastPourAt = 0;
+let toastTimer = null;
+
+const waterEl = document.getElementById('water');
+const waterAmountEl = document.getElementById('water-amount');
+const waterCounterEl = document.getElementById('water-counter');
+const waterBtn = document.getElementById('water-btn');
+const waterErrorEl = document.getElementById('water-error');
+
+function renderWater() {
+  const level = waterMl / WATER_MAX_ML;
+  document.documentElement.style.setProperty('--water-level', level.toFixed(4));
+  waterAmountEl.textContent = (waterMl / 1000).toFixed(1);
+  waterCounterEl.classList.toggle('is-full', waterMl >= WATER_MAX_ML);
+  waterEl.classList.toggle('is-dry', waterMl <= 0);
+}
+
+function showToast() {
+  waterErrorEl.classList.add('is-visible');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    waterErrorEl.classList.remove('is-visible');
+  }, TOAST_MS);
+}
+
+function pourWater() {
+  if (waterMl >= WATER_MAX_ML) {
+    waterMl = WATER_MAX_ML;
+    showToast();
+    renderWater();
+    return;
+  }
+  waterMl = Math.min(WATER_MAX_ML, waterMl + WATER_PER_CLICK_ML);
+  lastPourAt = Date.now();
+  renderWater();
+}
+
+waterBtn.addEventListener('click', pourWater);
+
+setInterval(() => {
+  if (waterMl <= 0) return;
+  if (Date.now() - lastPourAt < WATER_GRACE_MS) return;
+  waterMl = Math.max(0, waterMl - WATER_DRAIN_PER_TICK_ML);
+  renderWater();
+}, WATER_DRAIN_TICK_MS);
+
+renderWater();
+
 // ---- init ----
 
 let confettiFired = false;

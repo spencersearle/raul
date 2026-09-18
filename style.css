@@ -95,6 +95,182 @@ body {
   pointer-events: none;
 }
 
+/* ---- agua: rising water overlay ---- */
+:root {
+  --water-level: 0;
+}
+
+.water {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  pointer-events: none;
+  height: calc(var(--water-level) * 100vh);
+  transition: height 0.2s linear, opacity 0.3s ease;
+  will-change: height;
+}
+
+/* At 0 L there is no water, so the crest shouldn't linger on the baseline. */
+.water.is-dry { opacity: 0; }
+
+.water-body {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg,
+    rgba(96, 160, 217, 0.62) 0%,
+    rgba(47, 111, 168, 0.68) 45%,
+    rgba(18, 50, 74, 0.74) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 16px 32px -16px rgba(255, 255, 255, 0.4);
+  -webkit-backdrop-filter: blur(0.7px) saturate(1.3);
+  backdrop-filter: blur(0.7px) saturate(1.3);
+}
+
+.wave {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  width: 200%;
+  height: clamp(30px, 5.6vw, 54px);
+  margin-bottom: -1px;
+  display: block;
+}
+
+.wave--back path { fill: rgba(116, 172, 223, 0.45); }
+
+.wave--front .wave__fill { fill: rgba(70, 137, 196, 0.62); }
+
+/* crest highlight: an open path, so no stroke runs down the svg's side edges */
+.wave--front .wave__crest {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.55);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.wave--back {
+  animation: drift 7s linear infinite;
+  opacity: 0.9;
+}
+
+.wave--front {
+  animation: drift 4.2s linear infinite reverse;
+}
+
+@keyframes drift {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+/* ---- counter ---- */
+.water-counter {
+  position: fixed;
+  left: clamp(12px, 2.4vw, 24px);
+  bottom: clamp(12px, 2.4vw, 24px);
+  z-index: 60;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 9px 15px 10px;
+  border-radius: 999px;
+  background: linear-gradient(168deg, #17405f 0%, #0d2740 100%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 12px 26px -12px rgba(9, 28, 47, 0.7);
+  font-family: 'Baloo 2', sans-serif;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.water-counter__num {
+  font-weight: 800;
+  font-size: 1.32rem;
+  color: var(--sol-light);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+.water-counter__unit {
+  font-weight: 500;
+  font-size: 0.86rem;
+  letter-spacing: 0.04em;
+  color: #9dc2e2;
+}
+
+.water-counter.is-full .water-counter__num { color: #ffe9a3; }
+
+/* ---- button ---- */
+.water-btn {
+  position: fixed;
+  right: clamp(12px, 2.4vw, 24px);
+  bottom: clamp(12px, 2.4vw, 24px);
+  z-index: 60;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 700;
+  font-size: clamp(0.98rem, 2.1vw, 1.1rem);
+  letter-spacing: 0.01em;
+  color: var(--night);
+  padding: 13px 26px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(18, 50, 74, 0.2);
+  background: linear-gradient(178deg, var(--sol-light) 0%, var(--sol) 100%);
+  box-shadow:
+    0 10px 20px -10px rgba(18, 50, 74, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: transform 0.08s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+.water-btn:hover { filter: brightness(1.05); }
+
+.water-btn:active {
+  transform: translateY(2px);
+  box-shadow:
+    0 4px 10px -6px rgba(18, 50, 74, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.water-btn:focus-visible {
+  outline: 3px solid var(--celeste-deep);
+  outline-offset: 3px;
+}
+
+.water-btn__drop { font-size: 1.05em; }
+
+/* ---- toast: shown by class, never by the [hidden] attribute ---- */
+.toast {
+  position: fixed;
+  left: 50%;
+  top: clamp(14px, 3vw, 26px);
+  z-index: 60;
+  transform: translate(-50%, -14px);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 700;
+  font-size: clamp(0.95rem, 2.2vw, 1.12rem);
+  color: var(--white);
+  background: linear-gradient(168deg, #e0263f 0%, var(--rioja) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  padding: 11px 24px 12px;
+  white-space: nowrap;
+  box-shadow: 0 16px 30px -14px rgba(120, 10, 26, 0.75);
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
+}
+
+.toast.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+}
+
 /* ---- main content ---- */
 main {
   position: relative;
@@ -279,19 +455,32 @@ main {
   .mate-counterweight { display: none; }
 }
 
+@media (max-width: 620px) {
+  /* stack the button above the counter instead of crowding it */
+  .water-btn {
+    left: clamp(12px, 2.4vw, 24px);
+    right: clamp(12px, 2.4vw, 24px);
+    bottom: 66px;
+    justify-content: center;
+  }
+}
+
 @media (max-width: 480px) {
-  main { padding: 28px 16px 34px; }
+  main { padding: 28px 16px 110px; }
   .stage { flex-direction: column-reverse; gap: 18px; }
   .timer-card { width: 100%; padding: 22px 14px 24px; }
   .unit { min-width: 0; flex: 1; }
   .label { letter-spacing: 0.1em; }
   .mate { width: 118px; }
+  .water-counter { padding: 7px 12px 8px; }
+  .water-counter__num { font-size: 1.1rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .sol::before,
   .mate,
-  .colon {
+  .colon,
+  .wave {
     animation: none;
   }
 }
