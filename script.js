@@ -40,71 +40,119 @@ function updateCountdown() {
 }
 
 // ---- confetti (hand-rolled, no dependencies) ----
+// Two modes sharing one particle pool and one rAF loop: a one-shot burst
+// fired when the countdown ends, and a continuous rain toggled by the
+// switch that appears once that burst has fully fallen off-screen.
 
-function fireConfetti() {
-  const canvas = document.getElementById('confetti-canvas');
-  const ctx = canvas.getContext('2d');
+const CONFETTI_COLORS = ['#75aadb', '#ffffff', '#f6b40e', '#d1223a', '#4e86bd'];
+const CONFETTI_BURST_COUNT = 260;
+const CONFETTI_MAX_LIVE = 500;
+const CONFETTI_SPAWN_INTERVAL_MS = 90;
+const CONFETTI_SPAWN_PER_TICK = 3;
+
+const confettiCanvas = document.getElementById('confetti-canvas');
+const confettiCtx = confettiCanvas.getContext('2d');
+const confettiToggleEl = document.getElementById('confetti-toggle');
+const confettiToggleInput = document.getElementById('confetti-toggle-input');
+
+let confettiParticles = [];
+let confettiRunning = false;
+let confettiContinuous = false;
+let confettiLastSpawn = 0;
+let confettiIdleCallback = null;
+
+function resizeConfettiCanvas() {
   const dpr = window.devicePixelRatio || 1;
-
-  function resize() {
-    canvas.width = window.innerWidth * dpr;
-    canvas.height = window.innerHeight * dpr;
-    canvas.style.width = window.innerWidth + 'px';
-    canvas.style.height = window.innerHeight + 'px';
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  }
-  resize();
-  window.addEventListener('resize', resize);
-
-  const colors = ['#75aadb', '#ffffff', '#f6b40e', '#d1223a', '#4e86bd'];
-  const particles = [];
-  const count = 180;
-
-  for (let i = 0; i < count; i++) {
-    particles.push({
-      x: Math.random() * window.innerWidth,
-      y: -20 - Math.random() * window.innerHeight * 0.5,
-      w: 6 + Math.random() * 6,
-      h: 8 + Math.random() * 10,
-      color: colors[Math.floor(Math.random() * colors.length)],
-      vx: -2 + Math.random() * 4,
-      vy: 2 + Math.random() * 3,
-      rot: Math.random() * 360,
-      vrot: -8 + Math.random() * 16,
-      life: 0
-    });
-  }
-
-  let frame = 0;
-  const maxFrames = 420;
-
-  function tick() {
-    frame++;
-    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-
-    for (const p of particles) {
-      p.x += p.vx;
-      p.y += p.vy;
-      p.vy += 0.03;
-      p.rot += p.vrot;
-
-      ctx.save();
-      ctx.translate(p.x, p.y);
-      ctx.rotate((p.rot * Math.PI) / 180);
-      ctx.fillStyle = p.color;
-      ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
-      ctx.restore();
-    }
-
-    if (frame < maxFrames) {
-      requestAnimationFrame(tick);
-    } else {
-      ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-      window.removeEventListener('resize', resize);
-    }
-  }
-  requestAnimationFrame(tick);
+  confettiCanvas.width = window.innerWidth * dpr;
+  confettiCanvas.height = window.innerHeight * dpr;
+  confettiCanvas.style.width = window.innerWidth + 'px';
+  confettiCanvas.style.height = window.innerHeight + 'px';
+  confettiCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
+resizeConfettiCanvas();
+window.addEventListener('resize', resizeConfettiCanvas);
+
+function spawnConfettiPiece(y) {
+  return {
+    x: Math.random() * window.innerWidth,
+    y,
+    w: 6 + Math.random() * 6,
+    h: 8 + Math.random() * 10,
+    color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+    vx: -2 + Math.random() * 4,
+    vy: 2 + Math.random() * 3,
+    rot: Math.random() * 360,
+    vrot: -8 + Math.random() * 16
+  };
+}
+
+function startConfettiLoop() {
+  if (confettiRunning) return;
+  confettiRunning = true;
+  confettiLastSpawn = 0;
+  requestAnimationFrame(confettiTick);
+}
+
+function burstConfetti(count, onDone) {
+  if (onDone) confettiIdleCallback = onDone;
+  for (let i = 0; i < count; i++) {
+    confettiParticles.push(spawnConfettiPiece(-20 - Math.random() * window.innerHeight * 0.6));
+  }
+  startConfettiLoop();
+}
+
+function confettiTick(timestamp) {
+  confettiCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+
+  if (confettiContinuous) {
+    if (!confettiLastSpawn || timestamp - confettiLastSpawn > CONFETTI_SPAWN_INTERVAL_MS) {
+      for (let i = 0; i < CONFETTI_SPAWN_PER_TICK; i++) {
+        if (confettiParticles.length < CONFETTI_MAX_LIVE) {
+          confettiParticles.push(spawnConfettiPiece(-20));
+        }
+      }
+      confettiLastSpawn = timestamp;
+    }
+  }
+
+  confettiParticles = confettiParticles.filter((p) => p.y < window.innerHeight + 40);
+
+  for (const p of confettiParticles) {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.03;
+    p.rot += p.vrot;
+
+    confettiCtx.save();
+    confettiCtx.translate(p.x, p.y);
+    confettiCtx.rotate((p.rot * Math.PI) / 180);
+    confettiCtx.fillStyle = p.color;
+    confettiCtx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+    confettiCtx.restore();
+  }
+
+  if (confettiContinuous || confettiParticles.length > 0) {
+    requestAnimationFrame(confettiTick);
+  } else {
+    confettiRunning = false;
+    confettiCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    if (confettiIdleCallback) {
+      const done = confettiIdleCallback;
+      confettiIdleCallback = null;
+      done();
+    }
+  }
+}
+
+function revealConfettiToggle() {
+  confettiToggleEl.hidden = false;
+  requestAnimationFrame(() => confettiToggleEl.classList.add('is-visible'));
+}
+
+confettiToggleInput.addEventListener('change', () => {
+  confettiContinuous = confettiToggleInput.checked;
+  if (confettiContinuous) startConfettiLoop();
+});
 
 // ---- agua: click to fill, let go and it drains ----
 // Everything is tracked in whole millilitres so repeated += 0.1 can't drift.
@@ -170,14 +218,14 @@ renderWater();
 let confettiFired = false;
 updateCountdown();
 if (document.getElementById('done-message').hidden === false) {
-  fireConfetti();
+  burstConfetti(CONFETTI_BURST_COUNT, revealConfettiToggle);
   confettiFired = true;
 }
 
 const interval = setInterval(() => {
   const done = updateCountdown();
   if (done && !confettiFired) {
-    fireConfetti();
+    burstConfetti(CONFETTI_BURST_COUNT, revealConfettiToggle);
     confettiFired = true;
     clearInterval(interval);
   }
